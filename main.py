@@ -12,7 +12,6 @@ import re
 import os
 import json
 from flask import Flask, render_template, request, jsonify, redirect, send_file
-import pdfkit
 import re
 import os
 import json
@@ -22,8 +21,7 @@ from reportlab.pdfgen import canvas
 from io import BytesIO
 
 # Set up the path to wkhtmltopdf manually
-path_to_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'  # Update with your path
-pdfkit_config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
+
 
 os.environ["GOOGLE_API_KEY"] = 'AIzaSyAMyP-dFmCiqaBpHgg5opdju555DI3beCI'
 # Initialize the Gemini LLM model
