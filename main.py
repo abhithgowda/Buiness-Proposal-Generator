@@ -1,4 +1,4 @@
-from flask import Flask,render_template,request,jsonify,redirect
+from flask import Flask, render_template, request, jsonify, redirect
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 from langgraph.prebuilt import create_react_agent
@@ -7,7 +7,11 @@ from langchain.chains.llm_math.base import LLMMathChain
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.tools import tool, Tool
 from IPython.display import Image, display
-from langchain_google_genai import ChatGoogleGenerativeAI, HarmBlockThreshold, HarmCategory
+from langchain_google_genai import (
+    ChatGoogleGenerativeAI,
+    HarmBlockThreshold,
+    HarmCategory,
+)
 import re
 import os
 import json
@@ -28,15 +32,14 @@ from io import BytesIO
 # Set up the path to wkhtmltopdf manually
 
 
-os.environ["GOOGLE_API_KEY"] = 'AIzaSyAMyP-dFmCiqaBpHgg5opdju555DI3beCI'
+os.environ["GOOGLE_API_KEY"] = "AIzaSyAMyP-dFmCiqaBpHgg5opdju555DI3beCI"
 # Initialize the Gemini LLM model
 # setup model - this is your handle to the LLM
 
 
-
 llm = ChatGoogleGenerativeAI(
     model="gemini-pro",
-    #convert_system_message_to_human=True,
+    # convert_system_message_to_human=True,
     max_tokens=None,
     timeout=None,
     max_retries=2,
@@ -54,9 +57,11 @@ ddg_search = DuckDuckGoSearchAPIWrapper()
 
 problem_chain = LLMMathChain.from_llm(llm=llm)
 
-math_tool = Tool.from_function(name="Calculator",
-                func=problem_chain.run,
-                description="Useful for when you need to answer questions about math. This tool is only for math questions and nothing else. Only input math expressions.")
+math_tool = Tool.from_function(
+    name="Calculator",
+    func=problem_chain.run,
+    description="Useful for when you need to answer questions about math. This tool is only for math questions and nothing else. Only input math expressions.",
+)
 
 # @tool
 # def multiply(a: int, b: int) -> int:
@@ -69,6 +74,7 @@ def search(query: str) -> str:
     """searches the web for the provided query"""
     return ddg_search.run(query)
 
+
 tools = [search, math_tool]
 config = {"configurable": {"thread_id": "abc123"}}
 # Memory store
@@ -78,14 +84,16 @@ memory = MemorySaver()
 agent = create_react_agent(llm, tools, checkpointer=memory)
 # Initialize the Flask application
 
+
 def format_content(content):
     # Replace '*' with bullets (•) after headers
-    content = re.sub(r'\*\s', '• ', content)
+    content = re.sub(r"\*\s", "• ", content)
 
     # Remove stray asterisks used as markup
-    content = re.sub(r'\*+', '', content)
+    content = re.sub(r"\*+", "", content)
 
     return content
+
 
 def generate_pdf(content):
     # Create a BytesIO object to store the PDF data
@@ -108,8 +116,10 @@ def generate_pdf(content):
     # Helper function to wrap text within the page's width
     def wrap_text(text, max_width, pdf):
         wrapped_lines = []
-        for line in text.split('\n'):
-            wrapped_lines.extend(simpleSplit(line, 'Helvetica', 12, max_width))  # Wrapping each line based on max width
+        for line in text.split("\n"):
+            wrapped_lines.extend(
+                simpleSplit(line, "Helvetica", 12, max_width)
+            )  # Wrapping each line based on max width
         return wrapped_lines
 
     # Split and wrap the content into lines
@@ -117,11 +127,13 @@ def generate_pdf(content):
 
     # Write lines to the PDF and handle page breaks
     for line in lines:
-        if y_position < margin_y + 20:  # If the y_position is too low, create a new page
+        if (
+            y_position < margin_y + 20
+        ):  # If the y_position is too low, create a new page
             pdf.showPage()  # Create a new page
             pdf.setFont("Helvetica", 12)  # Reset the font for the new page
             y_position = page_height - margin_y  # Reset y_position for the new page
-        
+
         pdf.drawString(margin_x, y_position, line)
         y_position -= 15  # Move down after writing each line
 
@@ -132,11 +144,12 @@ def generate_pdf(content):
     pdf_stream.seek(0)
     return pdf_stream
 
-    
+
 def generate_proposal_section(prompt):
     # Invoke LLM agent to generate text based on the prompt
-    response = agent.invoke({"messages": [HumanMessage(content=prompt)]},config)
+    response = agent.invoke({"messages": [HumanMessage(content=prompt)]}, config)
     return response["messages"][-1].content
+
 
 def generate_proposal(client_data):
     # Executive Summary
@@ -168,29 +181,32 @@ def generate_proposal(client_data):
     """
 
     return full_proposal
+
+
 app = Flask(__name__)
 
+
 # Define a route for the home page
-@app.route('/')
+@app.route("/")
 def home():
-    return render_template('index.html')
+    return render_template("index.html")
 
 
-@app.route('/submit', methods=['POST'])
+@app.route("/submit", methods=["POST"])
 def submit():
     # Get data from the form
     client_data = {
-        "client_name": request.form.get('clientName'),
-        "industry": request.form.get('industry'),
-        "pain_points": request.form.get('painPoints'),
-        "expected_outcome": request.form.get('expectedOutcome'),
-        "project_name": request.form.get('projectName'),
-        "scope_of_work": request.form.get('scopeOfWork'),
-        "timeline": request.form.get('timeline'),
-        "budget": request.form.get('budget'),
-        "tone": request.form.get('tone'),
-       "deliverables": request.form.get('deliverables').split(','),  
-        "references": request.form.get('references').split(',')   
+        "client_name": request.form.get("clientName"),
+        "industry": request.form.get("industry"),
+        "pain_points": request.form.get("painPoints"),
+        "expected_outcome": request.form.get("expectedOutcome"),
+        "project_name": request.form.get("projectName"),
+        "scope_of_work": request.form.get("scopeOfWork"),
+        "timeline": request.form.get("timeline"),
+        "budget": request.form.get("budget"),
+        "tone": request.form.get("tone"),
+        "deliverables": request.form.get("deliverables").split(","),
+        "references": request.form.get("references").split(","),
     }
     # client_data = {
     # "client_name": "Urban Properties Management Inc.",
@@ -207,7 +223,7 @@ def submit():
     #     "Cloud-Based Platform Development",
     #     "Integration with Property Listing Portals",
     #     "Tenant Management and Automated Lease Processing Features",
-    #     "User Training and Onboarding",    
+    #     "User Training and Onboarding",
     #     "System Testing, Security Audits, and Data Compliance",
     #     "Deployment and Post-Deployment Support"
     # ],
@@ -217,7 +233,7 @@ def submit():
     # ]
     # }
     proposal = generate_proposal(client_data)
-    print(proposal) 
+    print(proposal)
     formatted_content = format_content(proposal)
     pdf_stream = generate_pdf(formatted_content)
     # Return the PDF as a downloadable file
@@ -225,10 +241,10 @@ def submit():
         pdf_stream,
         as_attachment=True,
         download_name="proposal.pdf",  # The name of the file to be downloaded
-        mimetype='application/pdf'
+        mimetype="application/pdf",
     )
 
 
 # Run the Flask application
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
