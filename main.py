@@ -12,12 +12,17 @@ import re
 import os
 import json
 from flask import Flask, render_template, request, jsonify, redirect, send_file
+import pdfkit
 import re
 import os
 import json
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.utils import simpleSplit
 from io import BytesIO
 
 # Set up the path to wkhtmltopdf manually
@@ -93,13 +98,32 @@ def generate_pdf(content):
     # Set font and other styles
     pdf.setFont("Helvetica", 12)
 
-    # Define where to start writing text (top of the page)
-    y_position = 750
+    # Define margins and page dimensions
+    margin_x = 72  # Left margin
+    margin_y = 72  # Bottom margin
+    page_width, page_height = letter
+    max_width = page_width - 2 * margin_x  # Max width for the text
+    y_position = page_height - margin_y  # Start writing from the top of the page
 
-    # Split the content into lines and write each line to the PDF
-    for line in content.split('\n'):
-        pdf.drawString(72, y_position, line)  # (x, y) positions to start writing
-        y_position -= 15  # Move the cursor down by 15 points for each line
+    # Helper function to wrap text within the page's width
+    def wrap_text(text, max_width, pdf):
+        wrapped_lines = []
+        for line in text.split('\n'):
+            wrapped_lines.extend(simpleSplit(line, 'Helvetica', 12, max_width))  # Wrapping each line based on max width
+        return wrapped_lines
+
+    # Split and wrap the content into lines
+    lines = wrap_text(content, max_width, pdf)
+
+    # Write lines to the PDF and handle page breaks
+    for line in lines:
+        if y_position < margin_y + 20:  # If the y_position is too low, create a new page
+            pdf.showPage()  # Create a new page
+            pdf.setFont("Helvetica", 12)  # Reset the font for the new page
+            y_position = page_height - margin_y  # Reset y_position for the new page
+        
+        pdf.drawString(margin_x, y_position, line)
+        y_position -= 15  # Move down after writing each line
 
     # Finalize the PDF and store it in the buffer
     pdf.save()
@@ -108,6 +132,7 @@ def generate_pdf(content):
     pdf_stream.seek(0)
     return pdf_stream
 
+    
 def generate_proposal_section(prompt):
     # Invoke LLM agent to generate text based on the prompt
     response = agent.invoke({"messages": [HumanMessage(content=prompt)]},config)
