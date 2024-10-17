@@ -31,8 +31,6 @@ from io import BytesIO
 
 # Set up the path to wkhtmltopdf manually
 
-
-os.environ["GOOGLE_API_KEY"] = "AIzaSyAMyP-dFmCiqaBpHgg5opdju555DI3beCI"
 # Initialize the Gemini LLM model
 # setup model - this is your handle to the LLM
 
